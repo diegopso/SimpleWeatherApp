@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View, Alert } from 'react-native';
-import Weather from './components/Weather';
-import { API_KEY } from './common/WeatherAPIKey';
-import { $http } from './services/Http';
+import Weather from './src/components/Weather';
+import { $gps } from './src/services/Gps';
+import { OpenWeatherMap } from './src/services/OpenWeatherMap';
 
 export default class App extends React.Component {
   state = {
@@ -13,29 +13,23 @@ export default class App extends React.Component {
   };
 
   componentDidMount() {
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        console.log(position);
-        this.fetchWeather(position.coords.latitude, position.coords.longitude);
-      },
-      error => {
-        console.log(error);
-        this.setState({
-          error: 'Error Gettig Weather Condtions'
-        });
-      }
-    );
+    $gps.get().then((position) => {
+      this.fetchWeather(position.coords.latitude, position.coords.longitude);
+    }, (error) => {
+      this.setState({
+        error: 'Error Gettig Weather Condtions'
+      });
+    });
   }
 
-  fetchWeather(lat = 25, lon = 25) {
-    $http.get(`http://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&APPID=${API_KEY}&units=metric`)
-      .then(json => {
-        this.setState({
-          temperature: json.main.temp,
-          weatherCondition: json.weather[0].main,
-          isLoading: false
-        });
+  fetchWeather(lat=25, lon=25) {
+    OpenWeatherMap.get(lat, lon).then((response) => {
+      this.setState({
+        temperature: Math.round(response.main.temp),
+        weatherCondition: response.weather[0].main,
+        isLoading: false
       });
+    });
   }
 
   render() {
